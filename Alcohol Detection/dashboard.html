@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý nhân viên & kiểm tra nồng độ cồn | Logistics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="./dashboard-light.css">
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-sans">
+
+    <nav class="bg-white border-b border-slate-200 p-4 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <span class="brand-icon"><i class="fa-solid fa-user-shield"></i></span>
+                <span class="text-xl font-bold tracking-wider text-slate-800">LOGISTICS <span class="font-normal text-slate-400">/</span> NHÂN VIÊN</span>
+            </div>
+
+            <div class="flex flex-wrap bg-slate-50 p-1 rounded-lg border border-slate-200 justify-center">
+                <button id="btn-tab-giamsat" class="tab-button active"><i class="fa-solid fa-desktop mr-1.5"></i>Tổng quan</button>
+                <button id="btn-tab-nhanvien" class="tab-button">Nhân viên & Theo dõi</button>
+                <button id="btn-tab-thongke" class="tab-button"><i class="fa-solid fa-chart-pie mr-1.5"></i>Thống kê kiểm tra</button>
+                <button id="btn-tab-dieukhien" class="tab-button"><i class="fa-solid fa-sliders mr-1.5"></i>Điều Khiển Từ Xa</button>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+                <div id="connection-dot" class="connection-dot"></div>
+                <span id="connection-label" class="text-xs text-slate-500 font-medium">Đang kết nối…</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto p-4 lg:p-6 space-y-6">
+
+        <header class="page-heading">
+          <div><div class="eyebrow">Quản lý tại bưu cục logistics</div>
+          <h1>Nhân viên & kiểm tra nồng độ cồn</h1>
+          <p>Quản lý hồ sơ, đối chiếu xe đăng ký và theo dõi kết quả kiểm tra của nhân viên khi lấy xe ra.</p></div>
+          <span class="scope-tag"><i class="fa-regular fa-building mr-2"></i>Một bưu cục · Xe máy cá nhân</span>
+        </header>
+        <p id="overview-error" role="status" class="text-sm text-red-600"></p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+<div class="metric"><i class="fa-solid fa-users metric-icon"></i><p class="metric-label">Nhân viên đăng ký</p><div id="overview-employees" class="metric-value">0</div><p class="metric-note">Hồ sơ quản lý tại bưu cục</p></div>
+<div class="metric"><i class="fa-solid fa-motorcycle metric-icon"></i><p class="metric-label">Xe nhân viên tại bưu cục</p><div id="overview-inside" class="metric-value">0</div><p class="metric-note">Theo trạng thái kiểm soát cổng</p></div>
+<div class="metric"><i class="fa-solid fa-clipboard-check metric-icon"></i><p class="metric-label">Lần kiểm tra nồng độ cồn</p><div id="overview-tests" class="metric-value">0</div><p class="metric-note">Toàn bộ lịch sử đã ghi nhận</p></div>
+<div class="metric"><i class="fa-solid fa-triangle-exclamation metric-icon"></i><p class="metric-label">Lần kiểm tra không đạt</p><div id="overview-fails" class="metric-value">0</div><p class="metric-note">Theo ngưỡng thử nghiệm đã cấu hình</p></div>
+        </div>
+        <div id="content-tab-giamsat" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div class="p-5 border-b border-slate-200"><h2 class="font-bold">Kết quả cần lưu ý</h2><p class="section-subtitle">Các lần đo không đạt hoặc lỗi gần nhất. Đây là kết quả từng lần đo, không phải trạng thái kỷ luật nhân viên.</p></div>
+            <div id="overview-attention" class="px-5 overflow-auto max-h-[500px]"></div>
+          </section>
+          <section class="lg:col-span-2 bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div class="p-5 border-b border-slate-200"><h2 class="font-bold">Lịch sử kiểm tra gần đây</h2><p class="section-subtitle">30 lần kiểm tra mới nhất · Số đo cảm biến ADC</p></div>
+            <div class="overflow-auto max-h-[550px]"><table class="w-full text-sm text-left"><thead><tr><th class="p-4">Thời gian</th><th class="p-4">Nhân viên</th><th class="p-4">Biển số</th><th class="p-4">Số đo</th><th class="p-4">Kết quả</th></tr></thead><tbody id="overview-test-rows"></tbody></table></div>
+          </section>
+        </div>
+        <section id="content-tab-nhanvien" class="hidden space-y-6">
+          <div class="bg-white border border-slate-200 rounded-xl p-5">
+            <h2 class="text-xl font-bold">Nhân viên & xe máy đăng ký</h2>
+            <p class="text-slate-500 mt-2">Đăng ký và cập nhật hồ sơ nhân viên, xe máy cá nhân và thẻ RFID sử dụng tại bưu cục.</p>
+            <p class="mt-3 text-teal-700"><span id="employee-count">0</span> nhân viên · <span id="employee-inside">0</span> xe tại bưu cục</p>
+            <p id="employee-message" role="status" class="my-3 text-amber-700">Đang tải hồ sơ...</p>
+            <form id="employee-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+<label class="block">Mã nhân viên<input id="employee-maNhanVien" required maxlength="100" class="block mt-2 w-full bg-slate-50 border border-slate-300 rounded-lg p-3"></label>
+<label class="block">Họ tên<input id="employee-hoTen" required maxlength="100" class="block mt-2 w-full bg-slate-50 border border-slate-300 rounded-lg p-3"></label>
+<label class="block">Bộ phận<input id="employee-boPhan" required maxlength="100" class="block mt-2 w-full bg-slate-50 border border-slate-300 rounded-lg p-3"></label>
+<label class="block">Biển số xe đăng ký<input id="employee-bienSo" required maxlength="100" class="block mt-2 w-full bg-slate-50 border border-slate-300 rounded-lg p-3"></label>
+<label class="block">UID thẻ RFID<input id="employee-rfid" maxlength="100" class="block mt-2 w-full bg-slate-50 border border-slate-300 rounded-lg p-3"></label>
+
+              <label class="flex items-center gap-3"><input id="employee-active" type="checkbox" checked> Đang hiệu lực</label>
+              <div class="flex gap-3 items-center flex-wrap lg:col-span-3">
+                <button id="employee-save" class="bg-teal-700 text-white rounded-lg px-5 py-3 font-bold" type="submit">Lưu hồ sơ</button>
+                <button id="employee-reset" type="button" class="border border-slate-300 rounded-lg px-5 py-3">Hồ sơ mới</button>
+                <button id="employee-use-card" type="button" disabled class="border border-slate-300 rounded-lg px-5 py-3 disabled:opacity-40">Dùng UID vừa quét</button>
+              </div>
+            </form>
+            <p id="employee-last-scan" class="text-sm text-slate-500 mt-3"></p>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-xl p-5">
+            <label for="employee-search">Tìm nhân viên / biển số / UID</label>
+            <input id="employee-search" class="block my-3 bg-slate-50 border border-slate-300 rounded-lg p-3 w-full" placeholder="Nhập mã, tên, biển số hoặc UID">
+            <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead><tr><th class="p-3">Mã NV</th><th class="p-3">Họ tên</th><th class="p-3">Bộ phận</th><th class="p-3">Biển số</th><th class="p-3">RFID</th><th class="p-3">Hiệu lực</th><th class="p-3">Vị trí xe</th><th class="p-3">Thao tác</th></tr></thead><tbody id="employee-rows"></tbody></table></div>
+          </div>
+          <section class="bg-white border border-slate-200 rounded-xl p-5" aria-labelledby="writer-title">
+            <a href="?simulate=1" class="text-teal-700 underline block mb-3">Thử mô phỏng cấp thẻ — không cần ESP32</a>
+            <div class="flex flex-wrap items-center justify-between gap-3"><h2 id="writer-title" class="text-xl font-bold">Cấp & ghi thẻ nhân viên</h2><span id="writer-online" class="scope-tag">Chưa kết nối trạm</span></div>
+            <p class="section-subtitle">Dùng ESP32 và RC522 riêng tại trạm CAP_THE_01. Thẻ lưu mã nhân viên và biển số; hồ sơ đầy đủ vẫn được quản lý trên hệ thống.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+              <div><label for="writer-person">Hồ sơ đã lưu</label><select id="writer-person" class="block w-full mt-2 p-3 border border-slate-300 rounded-lg bg-slate-50"><option value="">Chọn nhân viên đã đăng ký</option></select><p id="writer-profile" class="text-sm text-slate-600 mt-3"></p></div>
+              <div><p id="writer-card" class="text-sm text-slate-600"></p><button id="writer-copy" type="button" disabled class="mt-3 border border-slate-300 rounded-lg px-4 py-2">Dùng UID trạm cấp thẻ để đăng ký</button></div>
+            </div>
+            <p class="text-sm text-slate-500 mt-4">Chỉ hỗ trợ MIFARE Classic 1K/4K. Giữ thẻ trên đầu đọc khi ghi và kiểm tra; dùng thẻ trống hoặc thẻ đã cấp bằng hệ thống này.</p>
+            <button id="writer-send" type="button" disabled class="bg-teal-700 text-white rounded-lg px-5 py-3 mt-4 font-bold">Ghi mã nhân viên & biển số vào thẻ</button>
+            <button id="writer-erase" type="button" disabled class="border border-red-300 text-red-700 rounded-lg px-5 py-3 mt-4">Xóa dữ liệu trên thẻ đã thu hồi</button>
+            <p class="text-sm text-slate-600 mt-2">Thu hồi thẻ tại dòng nhân viên trước khi xóa. Xóa mã nhân viên và biển số trong vùng dữ liệu hệ thống; UID và lịch sử được giữ nguyên.</p>
+            <p id="writer-message" role="status" class="text-sm text-amber-700 mt-3"></p>
+            <p id="writer-result" aria-live="polite" class="text-sm text-teal-700 mt-3"></p>
+          </section>
+          <div id="employee-history" class="bg-white border border-slate-200 rounded-xl p-5">
+            <h2 class="text-xl font-bold mb-4">Theo dõi nhân viên</h2>
+            <div class="flex gap-3 flex-wrap items-end">
+              <label>Tìm nhân viên / biển số<input id="employee-log-search" class="block mt-2 bg-slate-50 border border-slate-300 rounded-lg p-3"></label>
+              <label>Ngày (giờ Việt Nam)<input id="employee-day" type="date" class="block mt-2 bg-slate-50 border border-slate-300 rounded-lg p-3"></label>
+              <button id="employee-export" class="border border-slate-300 rounded-lg px-5 py-3">Xuất CSV</button>
+            </div>
+            <p id="employee-summary" class="my-4 text-teal-700"></p>
+            <p class="text-sm text-slate-500 mb-3">Hiển thị 300 sự kiện mới nhất; thống kê và CSV gồm toàn bộ kết quả lọc. Số đo ADC thử nghiệm chưa hiệu chuẩn sang mg/L.</p>
+            <div class="overflow-auto max-h-[550px]"><table class="w-full text-sm text-left"><thead><tr><th class="p-3">Thời gian</th><th class="p-3">Mã NV</th><th class="p-3">Họ tên</th><th class="p-3">Biển số</th><th class="p-3">Sự kiện</th><th class="p-3">Số đo</th><th class="p-3">Ghi chú</th></tr></thead><tbody id="employee-log-rows"></tbody></table></div>
+          </div>
+        </section>
+
+        <div id="content-tab-thongke" class="grid grid-cols-1 lg:grid-cols-5 gap-6 hidden">
+            <p id="chart-note" class="lg:col-span-5 text-sm text-slate-500"></p>
+            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between h-[450px]">
+                <h2 class="font-bold text-slate-800 text-sm tracking-wide mb-4 uppercase flex items-center"><i class="fa-solid fa-chart-pie text-indigo-600 mr-2"></i>Kết quả kiểm tra nồng độ cồn</h2>
+                <div class="flex-1 flex items-center justify-center relative"><canvas id="levelChart" class="max-h-[300px] max-w-[300px]"></canvas></div>
+            </div>
+            <div class="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between h-[450px]">
+                <h2 class="font-bold text-slate-800 text-sm tracking-wide mb-4 uppercase flex items-center"><i class="fa-solid fa-chart-bar text-emerald-600 mr-2"></i>Số lần kiểm tra theo nhân viên</h2>
+                <p class="section-subtitle">10 nhân viên có nhiều lần kiểm tra nhất · Toàn bộ lịch sử</p>
+                <div class="flex-1 w-full flex items-center justify-center"><canvas id="userChart" class="w-full max-h-[320px]"></canvas></div>
+            </div>
+        </div>
+
+        <div id="content-tab-dieukhien" class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
+            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h2 class="font-bold text-slate-800 text-base tracking-wide uppercase flex items-center mb-4"><i class="fa-solid fa-gear text-amber-500 mr-2"></i>Cấu Hình Hệ Thống</h2>
+                    
+                    <label class="block text-sm font-semibold text-slate-600 mb-2">Ngưỡng cảm biến cồn (ADC thử nghiệm, 1–4094):</label>
+                    <div class="flex space-x-3 mb-6">
+                        <input type="number" id="input-threshold" min="1" max="4094" step="1" placeholder="Chưa cấu hình" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 font-bold focus:border-amber-500">
+                        <button id="btn-update-threshold" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-4 py-2 rounded-lg transition-all shadow">Lưu</button>
+                    </div>
+
+                    <p class="text-xs text-slate-500 mb-4">Giá trị ADC thử nghiệm, chưa hiệu chuẩn sang mg/L.</p>
+                    <label class="block text-sm font-semibold text-slate-600 mb-2 border-t border-slate-200 pt-4">Sức chứa khu vực xe nhân viên:</label>
+                    <p class="section-subtitle mb-3">Còn <span id="text-available-slots">—</span> / <span id="text-total-slots">—</span> vị trí theo cấu hình cổng.</p>
+                    <div class="flex space-x-3">
+                        <input type="number" id="input-total-slots" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 font-bold focus:border-cyan-500">
+                        <button id="btn-update-slots" class="bg-teal-700 hover:bg-teal-800 text-white font-bold px-4 py-2 rounded-lg transition-all shadow">Lưu Mới</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h2 class="font-bold text-slate-800 text-base tracking-wide uppercase flex items-center mb-2"><i class="fa-solid fa-door-open text-teal-700 mr-2"></i>Điều khiển cổng bưu cục</h2>
+                    <p class="text-xs text-slate-500 mb-6">Mở cổng khẩn cấp khi có sự cố. Thao tác này không ghi nhận một lượt vào/ra theo nhân viên.</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-50 p-4 border border-slate-200 rounded-lg flex flex-col items-center justify-center space-y-3">
+                            <span class="text-xs font-semibold text-slate-500 uppercase">Cổng Vào</span>
+                            <button id="btn-toggle-gate-in" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-md text-sm transition-colors flex justify-center"><span id="text-gate-in">Đóng</span></button>
+                        </div>
+                        <div class="bg-slate-50 p-4 border border-slate-200 rounded-lg flex flex-col items-center justify-center space-y-3">
+                            <span class="text-xs font-semibold text-slate-500 uppercase">Cổng Ra</span>
+                            <button id="btn-toggle-gate-out" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-md text-sm transition-colors flex justify-center"><span id="text-gate-out">Đóng</span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer class="footnote">Trạng thái xe được ghi nhận khi hệ thống chấp nhận lệnh mở cổng; chưa có cảm biến xác nhận xe đi qua. Kết quả ADC dùng cho mô hình thử nghiệm, chưa quy đổi nồng độ mg/L.</footer>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, get, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDw27E9ECJKMmfjZCUkD1MO_EPFSnLrQb8",
+            authDomain: "alcohol-detection-a3c5b.firebaseapp.com",
+            databaseURL: "https://alcohol-detection-a3c5b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "alcohol-detection-a3c5b",
+            storageBucket: "alcohol-detection-a3c5b.firebasestorage.app",
+            messagingSenderId: "183689759430",
+            appId: "1:183689759430:web:e95ef84e72001701ab65c7"
+        };
+        const simulate = new URLSearchParams(location.search).get("simulate") === "1";
+        const demo = simulate || new URLSearchParams(location.search).get("demo") === "1";
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        import { mountEmployees } from './employee-dashboard.js?v=3';
+        import {createSimulator, mountSimulator} from './card-simulator.mjs?v=2';
+        const simulator = simulate ? createSimulator() : null;
+        const employeeDb = simulate ? null : db;
+        const employeeApi = simulate ? simulator.api : {ref,onValue,get,runTransaction};
+        mountEmployees(employeeDb, employeeApi, demo && !simulate);
+        import { mountCardWriter } from './card-writer.js?v=4';
+        mountCardWriter(employeeDb, employeeApi, demo && !simulate);
+        if (simulate) mountSimulator(simulator);
+
+        let statusGateInKhuan = false;
+        let statusGateOutKhuan = false;
+
+        import { mountOverview } from './employee-overview.js';
+        mountOverview(db, {ref,onValue}, demo);
+
+        // CHUYỂN TAB
+        const tabs = ['giamsat', 'nhanvien', 'thongke', 'dieukhien'];
+        tabs.forEach(tab => {
+            document.getElementById(`btn-tab-${tab}`).addEventListener('click', () => {
+                tabs.forEach(t => {
+                    document.getElementById(`content-tab-${t}`).classList.add('hidden');
+                    document.getElementById(`btn-tab-${t}`).className = "tab-button";
+                });
+                document.getElementById(`content-tab-${tab}`).classList.remove('hidden');
+                document.getElementById(`btn-tab-${tab}`).className = "tab-button active";
+
+            });
+        });
+
+        if (simulate) document.getElementById('btn-tab-nhanvien').click();
+
+        if (!demo) {
+        // ĐỒNG BỘ CẤU HÌNH & CHỖ TRỐNG (REAL-TIME)
+        onValue(ref(db, 'CauHinh'), (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                
+                // Đồng bộ Ngưỡng cồn
+                if (document.activeElement !== document.getElementById('input-threshold'))
+                    document.getElementById('input-threshold').value = data.NguongADC ?? '';
+                
+                // Đồng bộ Tổng số chỗ & Chỗ trống
+                if (data.TongCho !== undefined) {
+                    document.getElementById('text-total-slots').innerText = data.TongCho;
+                    if(!document.getElementById('input-total-slots').value) document.getElementById('input-total-slots').value = data.TongCho;
+                }
+                if (data.ChoTrong !== undefined) document.getElementById('text-available-slots').innerText = data.ChoTrong;
+
+                // Nút Khẩn cấp In
+                statusGateInKhuan = data.MoCongInKhuan || false;
+                document.getElementById('btn-toggle-gate-in').className = statusGateInKhuan ? "w-full bg-green-600 text-white font-bold py-2 rounded-md transition-colors" : "w-full bg-slate-100 hover:bg-red-600 text-slate-600 font-bold py-2 rounded-md transition-all";
+                document.getElementById('text-gate-in').innerText = statusGateInKhuan ? "Đang Mở Khẩn" : "Đang Đóng";
+
+                // Nút Khẩn cấp Out
+                statusGateOutKhuan = data.MoCongOutKhuan || false;
+                document.getElementById('btn-toggle-gate-out').className = statusGateOutKhuan ? "w-full bg-green-600 text-white font-bold py-2 rounded-md transition-colors" : "w-full bg-slate-100 hover:bg-red-600 text-slate-600 font-bold py-2 rounded-md transition-all";
+                document.getElementById('text-gate-out').innerText = statusGateOutKhuan ? "Đang Mở Khẩn" : "Đang Đóng";
+            }
+        });
+
+        // EVENT BUTTONS CẤU HÌNH
+        document.getElementById('btn-update-threshold').addEventListener('click', async () => {
+            const button = document.getElementById('btn-update-threshold');
+            const v = Number(document.getElementById('input-threshold').value);
+            if (!Number.isInteger(v) || v < 1 || v > 4094) {
+                alert('Nhập ngưỡng ADC là số nguyên từ 1 đến 4094.');
+                return;
+            }
+            button.disabled = true;
+            try {
+                await set(ref(db, 'CauHinh/NguongADC'), v);
+                alert('Đã cập nhật ngưỡng ADC thử nghiệm.');
+            } catch (error) {
+                alert('Không lưu được ngưỡng: ' + error.message);
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+        document.getElementById('btn-update-slots').addEventListener('click', async () => {
+            const max = Number(document.getElementById('input-total-slots').value);
+            if (!Number.isInteger(max) || max < 1) { alert('Nhập sức chứa là số nguyên dương.'); return; }
+            try {
+                await runTransaction(ref(db, 'CauHinh'), current => {
+                    if (!current || !Number.isInteger(current.TongCho) || !Number.isInteger(current.ChoTrong))
+                        throw Error('Chưa có cấu hình số xe hợp lệ để cập nhật sức chứa.');
+                    const occupied = current.TongCho - current.ChoTrong;
+                    if (occupied < 0 || max < occupied) throw Error('Sức chứa phải đủ cho số xe đang được ghi nhận.');
+                    return {...current, TongCho:max, ChoTrong:max-occupied};
+                }, {applyLocally:false});
+                alert('Đã cập nhật sức chứa khu vực xe nhân viên.');
+            } catch(error) { alert('Không cập nhật được: ' + error.message); }
+        });
+
+        document.getElementById('btn-toggle-gate-in').addEventListener('click', () => set(ref(db, 'CauHinh/MoCongInKhuan'), !statusGateInKhuan));
+        document.getElementById('btn-toggle-gate-out').addEventListener('click', () => set(ref(db, 'CauHinh/MoCongOutKhuan'), !statusGateOutKhuan));
+
+        } // No live subscriptions or control writes in demo mode.
+    </script>
+</body>
+</html>

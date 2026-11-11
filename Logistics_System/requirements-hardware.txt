@@ -1,0 +1,4 @@
+# The desktop demo and SQLite database only need Python's standard library.
+pyserial>=3.5,<4
+# Optional camera: reuse the environment in ../LicensePlate_Test/.venv,
+# which already contains this project's YOLO / PaddleOCR stack.
