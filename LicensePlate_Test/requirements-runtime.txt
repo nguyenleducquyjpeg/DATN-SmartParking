@@ -1,0 +1,8 @@
+# Direct dependencies for the CPU gate dashboard (Python 3.11, Windows x64).
+# Not a fully resolved or clean-machine-validated lockfile.
+firebase-admin>=6,<8
+Pillow>=10,<13
+opencv-python>=4.10,<5.1
+ultralytics>=8.3,<9
+paddleocr>=3.7,<4
+paddlepaddle==3.3.1

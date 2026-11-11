@@ -1,5 +1,7 @@
 # DATN — Quản lý định danh tài xế và kiểm soát nồng độ cồn bằng RFID
 
+**Thành viên mới:** xem [Hướng dẫn cài đặt và làm chung](HUONG_DAN_CAI_DAT_LAM_CHUNG.md) để chạy mô phỏng, cài Python/camera và gửi thay đổi qua Pull Request.
+
 Hệ thống tại một bưu cục logistics: quản lý hồ sơ tài xế và xe máy cá nhân, đối chiếu RFID/biển số, kiểm tra nồng độ cồn trước khi cho xe ra và theo dõi lịch sử.
 
 ## Thành phần
